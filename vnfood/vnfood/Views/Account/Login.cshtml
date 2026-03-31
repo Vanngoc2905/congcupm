@@ -1,0 +1,67 @@
+@model vnfood.ViewModels.LoginViewModel
+@{
+    ViewData["Title"] = "Đăng nhập";
+    Layout = "_Layout";
+}
+
+<div class="auth-page">
+    <div class="auth-card">
+        <!-- Brand panel -->
+        <div class="auth-brand-panel">
+            <div class="auth-brand-icon">🍳</div>
+            <div class="auth-brand-title">Bếp Việt</div>
+            <div class="auth-brand-subtitle">Nơi chia sẻ hương vị, kết nối yêu thương qua từng món ăn Việt.</div>
+        </div>
+
+        <!-- Form panel -->
+        <div class="auth-form-panel">
+            <div class="auth-form-title">Chào mừng trở lại! 👋</div>
+            <div class="auth-form-subtitle">Đăng nhập để tiếp tục khám phá ẩm thực</div>
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert-vn error">
+                    <i class="fa fa-circle-exclamation"></i>
+                    <span>@Html.ValidationSummary(true)</span>
+                </div>
+            }
+
+            <form asp-action="Login" method="post">
+                <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+                @Html.AntiForgeryToken()
+
+                <div class="form-group-vn">
+                    <label asp-for="Email">Địa chỉ Email</label>
+                    <input asp-for="Email" type="email" placeholder="name@example.com" id="login-email" autocomplete="email" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+
+                <div class="form-group-vn">
+                    <label asp-for="Password">Mật khẩu</label>
+                    <input asp-for="Password" type="password" placeholder="••••••••" id="login-password" autocomplete="current-password" />
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <label style="display:flex; align-items:center; gap:8px; font-size:13.5px; color:#4A4A6A; cursor:pointer;">
+                        <input asp-for="RememberMe" type="checkbox" style="width:15px; height:15px; accent-color:#F5A623;" id="remember-me" />
+                        Ghi nhớ đăng nhập
+                    </label>
+                    <a href="#" style="font-size:13px; color:#F5A623; text-decoration:none; font-weight:600;">Quên mật khẩu?</a>
+                </div>
+
+                <button type="submit" class="btn-primary-vn" id="login-btn">
+                    <i class="fa fa-sign-in-alt"></i> Đăng nhập
+                </button>
+            </form>
+
+            <div class="auth-alt-link">
+                Chưa có tài khoản? <a asp-action="Register">Đăng ký ngay</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

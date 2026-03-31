@@ -1,0 +1,89 @@
+@model vnfood.ViewModels.RegisterViewModel
+@{
+    ViewData["Title"] = "Đăng ký";
+    Layout = "_Layout";
+}
+
+<div class="auth-page">
+    <div class="auth-card" style="max-width:960px;">
+        <!-- Brand panel -->
+        <div class="auth-brand-panel">
+            <div class="auth-brand-icon">🍳</div>
+            <div class="auth-brand-title">Bếp Việt</div>
+            <div class="auth-brand-subtitle">Tham gia cộng đồng hàng triệu người yêu ẩm thực Việt Nam.</div>
+            <div style="margin-top:16px; width:100%;">
+                <div style="display:flex; align-items:center; gap:10px; color:rgba(255,255,255,0.85); font-size:13.5px; margin-bottom:10px;">
+                    <i class="fa fa-check-circle" style="font-size:16px;"></i>
+                    Chia sẻ công thức nấu ăn
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; color:rgba(255,255,255,0.85); font-size:13.5px; margin-bottom:10px;">
+                    <i class="fa fa-check-circle" style="font-size:16px;"></i>
+                    Khám phá ẩm thực ba miền
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; color:rgba(255,255,255,0.85); font-size:13.5px;">
+                    <i class="fa fa-check-circle" style="font-size:16px;"></i>
+                    Kết nối cùng đam mê
+                </div>
+            </div>
+        </div>
+
+        <!-- Form panel -->
+        <div class="auth-form-panel">
+            <div class="auth-form-title">Tạo tài khoản mới 🎉</div>
+            <div class="auth-form-subtitle">Miễn phí và chỉ mất vài giây</div>
+
+            <form asp-action="Register" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="form-group-vn">
+                    <label asp-for="FullName">Họ và tên</label>
+                    <input asp-for="FullName" type="text" placeholder="Nguyễn Văn A" id="reg-fullname" autocomplete="name" />
+                    <span asp-validation-for="FullName" class="text-danger"></span>
+                </div>
+
+                <div class="form-group-vn">
+                    <label asp-for="Email">Địa chỉ Email</label>
+                    <input asp-for="Email" type="email" placeholder="name@example.com" id="reg-email" autocomplete="email" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+
+                <div style="display:flex; gap:14px;">
+                    <div class="form-group-vn" style="flex:1;">
+                        <label asp-for="Password">Mật khẩu</label>
+                        <input asp-for="Password" type="password" placeholder="Ít nhất 6 ký tự" id="reg-password" autocomplete="new-password" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+                    <div class="form-group-vn" style="flex:1;">
+                        <label asp-for="ConfirmPassword">Xác nhận mật khẩu</label>
+                        <input asp-for="ConfirmPassword" type="password" placeholder="Nhập lại mật khẩu" id="reg-confirm" autocomplete="new-password" />
+                        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                    </div>
+                </div>
+
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="alert-vn error" style="margin-bottom:14px;">
+                        <i class="fa fa-circle-exclamation"></i>
+                        @Html.ValidationSummary(true)
+                    </div>
+                }
+
+                <div style="font-size:12px; color:#9A9AB4; margin-bottom:18px; line-height:1.6;">
+                    Bằng cách đăng ký, bạn đồng ý với <a href="#" style="color:#F5A623;">Điều khoản dịch vụ</a> và <a href="#" style="color:#F5A623;">Chính sách quyền riêng tư</a> của Bếp Việt.
+                </div>
+
+                <button type="submit" class="btn-primary-vn" id="register-btn">
+                    <i class="fa fa-user-plus"></i> Tạo tài khoản
+                </button>
+            </form>
+
+            <div class="auth-alt-link">
+                Đã có tài khoản? <a asp-action="Login">Đăng nhập</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

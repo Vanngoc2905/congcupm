@@ -1,0 +1,165 @@
+@model vnfood.Models.Post
+@{
+    ViewData["Title"] = "Chia sẻ Công Thức - Bếp Việt";
+}
+
+<div style="max-width: 860px; margin: 0 auto; padding-top: 20px;">
+    
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert-vn error" style="margin-bottom:16px;"><i class="fa fa-circle-exclamation"></i> @TempData["Error"]</div>
+    }
+
+    <div class="card-vn" style="padding: 30px;">
+        <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 24px; color: var(--text-dark);">
+            <i class="fa fa-pen-nib" style="color:var(--primary);"></i> Chia sẻ Công Thức Mới
+        </h2>
+
+        <form asp-controller="Post" asp-action="Create" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+
+            <!-- Title, Time, Servings -->
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div class="form-group-vn" style="flex: 2; min-width: 300px;">
+                    <label>TÊN MÓN ĂN</label>
+                    <input type="text" asp-for="Title" class="form-control-vn" placeholder="Vd: Phở Bò Gia Truyền" required />
+                </div>
+                
+                <div class="form-group-vn" style="flex: 1; min-width: 140px;">
+                    <label>THỜI GIAN</label>
+                    <input type="text" asp-for="PrepTime" class="form-control-vn" placeholder="Vd: 30 phút" required />
+                </div>
+
+                <div class="form-group-vn" style="flex: 1; min-width: 140px;">
+                    <label>KHẨU PHẦN</label>
+                    <input type="text" asp-for="Servings" class="form-control-vn" placeholder="Vd: 4 người" required />
+                </div>
+            </div>
+
+            <!-- Description & Image -->
+            <div class="form-group-vn" style="margin-top: 20px;">
+                <label>MÔ TẢ NGẮN / LỜI GIỚI THIỆU</label>
+                <div style="display: flex; gap: 10px;">
+                    <textarea asp-for="Content" class="form-control-vn" rows="3" placeholder="Chia sẻ câu chuyện hoặc mô tả về món ăn này..." style="flex:1;" required></textarea>
+                    
+                    <div style="width: 120px; flex-shrink: 0; display:flex; flex-direction:column;">
+                        <label for="main-img" class="upload-box main-upload" id="upload-box-main">
+                            <i class="fa fa-image"></i>
+                            <span style="font-size: 11px; margin-top:4px;">Ảnh chính</span>
+                            <img src="" class="preview-img d-none" id="preview-main" />
+                        </label>
+                        <input type="file" id="main-img" name="imageFile" accept="image/*" style="display:none;" onchange="previewImage(this, 'preview-main', 'upload-box-main')" required />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub Images -->
+            <div class="form-group-vn">
+                <label style="font-size: 13px; color: var(--text-medium); font-weight: normal; margin-bottom: 8px;">Hình ảnh phụ (Các bước làm món, kết quả...)</label>
+                <div style="display: flex; gap: 16px;">
+                    <label for="sub-img-1" class="upload-box sub-upload" id="upload-box-1">
+                        <i class="fa fa-plus"></i>
+                        <img src="" class="preview-img d-none" id="preview-1" />
+                    </label>
+                    <input type="file" id="sub-img-1" name="imageFile2" accept="image/*" style="display:none;" onchange="previewImage(this, 'preview-1', 'upload-box-1')" />
+
+                    <label for="sub-img-2" class="upload-box sub-upload" id="upload-box-2">
+                        <i class="fa fa-plus"></i>
+                        <img src="" class="preview-img d-none" id="preview-2" />
+                    </label>
+                    <input type="file" id="sub-img-2" name="imageFile3" accept="image/*" style="display:none;" onchange="previewImage(this, 'preview-2', 'upload-box-2')" />
+
+                    <label for="sub-img-3" class="upload-box sub-upload" id="upload-box-3">
+                        <i class="fa fa-plus"></i>
+                        <img src="" class="preview-img d-none" id="preview-3" />
+                    </label>
+                    <input type="file" id="sub-img-3" name="imageFile4" accept="image/*" style="display:none;" onchange="previewImage(this, 'preview-3', 'upload-box-3')" />
+                </div>
+            </div>
+
+            <hr style="margin: 30px 0; border:none; border-top:1px solid var(--border);" />
+
+            <!-- Ingredients & Instructions -->
+            <div class="form-group-vn">
+                <label>NGUYÊN LIỆU</label>
+                <textarea asp-for="Ingredients" class="form-control-vn" rows="5" placeholder="Mỗi dòng một nguyên liệu.&#10;Ví dụ:&#10;- 500g Bắp bò&#10;- 1 củ gừng nhỏ&#10;- 2 hoa hồi" required></textarea>
+            </div>
+
+            <div class="form-group-vn" style="margin-top: 24px;">
+                <label>CÁCH LÀM</label>
+                <textarea asp-for="Instructions" class="form-control-vn" rows="7" placeholder="Mỗi bước một dòng.&#10;Ví dụ:&#10;1. Rửa sạch bắp bò với muối và gừng.&#10;2. Luộc sơ bắp bò qua nước sôi khoảng 3 phút.&#10;3. Nướng gừng, hành tím, hoa hồi cho thơm." required></textarea>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap: 16px; margin-top: 30px;">
+                <a href="/" class="btn-primary-vn" style="background:#f1f5f9; color:#475569; text-decoration:none;">Hủy</a>
+                <button type="submit" class="btn-primary-vn" style="padding-left: 30px; padding-right: 30px;">Đăng công thức</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .upload-box {
+        background: #f8fafc;
+        border: 2px dashed #cbd5e1;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.2s;
+    }
+    .upload-box:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: #fffbef;
+    }
+    .upload-box.has-img {
+        border-style: solid;
+        border-color: #e2e8f0;
+    }
+    .upload-box.has-img i, .upload-box.has-img span { display: none; }
+    
+    .main-upload {
+        width: 100%;
+        height: 100%;
+        min-height: 90px;
+    }
+    .sub-upload {
+        width: 80px;
+        height: 80px;
+    }
+    .preview-img {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        object-fit: cover;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        function previewImage(input, imgId, boxId) {
+            const file = input.files[0];
+            const imgEl = document.getElementById(imgId);
+            const boxEl = document.getElementById(boxId);
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imgEl.src = e.target.result;
+                    imgEl.classList.remove('d-none');
+                    boxEl.classList.add('has-img');
+                }
+                reader.readAsDataURL(file);
+            } else {
+                imgEl.src = '';
+                imgEl.classList.add('d-none');
+                boxEl.classList.remove('has-img');
+            }
+        }
+    </script>
+}

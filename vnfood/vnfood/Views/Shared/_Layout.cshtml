@@ -1,0 +1,301 @@
+@using Microsoft.AspNetCore.Identity
+@using vnfood.Models
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Bếp Việt</title>
+    <meta name="description" content="@(ViewData["Description"] ?? "Mạng xã hội ẩm thực Việt Nam - Chia sẻ công thức, khám phá hương vị")" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+
+@{
+    ApplicationUser? currentUser = null;
+    string avatarInitial = "?";
+    if (SignInManager.IsSignedIn(User))
+    {
+        currentUser = await UserManager.GetUserAsync(User);
+        avatarInitial = currentUser?.FullName?.FirstOrDefault().ToString()
+                     ?? currentUser?.UserName?.FirstOrDefault().ToString()
+                     ?? "?";
+    }
+}
+
+@if (SignInManager.IsSignedIn(User))
+{
+    <!-- NAVBAR -->
+    <nav class="navbar-vnfood">
+        <a href="/" class="navbar-brand-vn">
+            <div class="brand-icon">🍳</div>
+            <span>Bếp Việt</span>
+        </a>
+
+        <form action="/Search" method="get" class="navbar-search" style="margin: 0;">
+            <i class="fa fa-search search-icon"></i>
+            <input type="text" name="q" placeholder="Tìm kiếm bài viết, người dùng..." id="globalSearch" autocomplete="off" required />
+            <button type="submit" style="display:none;">Search</button>
+        </form>
+
+        <div class="navbar-actions">
+            <a href="/" class="nav-icon-btn @(ViewData["ActiveNav"]?.ToString() == "home" ? "active" : "")" title="Trang chủ" id="nav-home">
+                <i class="fa fa-home"></i>
+            </a>
+            <a href="/Account/Profile" class="nav-icon-btn @(ViewData["ActiveNav"]?.ToString() == "profile" ? "active" : "")" title="Hồ sơ" id="nav-profile">
+                <i class="fa fa-user"></i>
+            </a>
+            <a href="/Messages" class="nav-icon-btn @(ViewData["ActiveNav"]?.ToString() == "messages" ? "active" : "")" title="Tin nhắn" id="nav-messages">
+                <i class="fa fa-comment-dots"></i>
+            </a>
+            <a href="/Account/Profile?tab=saved" class="nav-icon-btn @(ViewData["ActiveNav"]?.ToString() == "saved" ? "active" : "")" title="Đã lưu" id="nav-saved">
+                <i class="fa-regular fa-bookmark"></i>
+            </a>
+            <div style="position:relative;">
+                <button class="nav-icon-btn" title="Thông báo" id="nav-notifications" onclick="toggleNotifications()" style="border:none; cursor:pointer;" type="button">
+                    <i class="fa fa-bell"></i>
+                    <span class="nav-badge d-none" id="notif-badge">0</span>
+                </button>
+                
+                <div class="dropdown-vn" id="notif-dropdown" style="display:none; width:350px; right:0; top:46px; padding:0; z-index:1000; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+                    <div style="padding:16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                        <h4 style="margin:0; font-size:16px; font-weight:700;">Thông báo</h4>
+                        <button onclick="markAllRead()" style="background:none; border:none; color:var(--primary); cursor:pointer; font-size:13px; font-weight:600;">Đánh dấu đã đọc</button>
+                    </div>
+                    <div id="notif-list" style="max-height:400px; overflow-y:auto;">
+                        <div style="padding:30px; text-align:center; color:var(--text-light); font-size:14px;">Chưa có thông báo nào.</div>
+                    </div>
+                    <div style="padding:12px; text-align:center; border-top:1px solid var(--border); background:#f8fafc;">
+                        <a href="/Account/Profile" style="text-decoration:none; color:var(--primary); font-size:14px; font-weight:600;">Hồ sơ của bạn</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile dropdown -->
+            <div style="position:relative;">
+                <a href="/Account/Profile" class="nav-avatar" id="nav-avatar-btn" title="@currentUser?.FullName ?? currentUser?.UserName">
+                    @if (!string.IsNullOrEmpty(currentUser?.AvatarUrl))
+                    {
+                        <img src="@currentUser.AvatarUrl" alt="@currentUser.FullName" />
+                    }
+                    else
+                    {
+                        @avatarInitial.ToUpper()
+                    }
+                </a>
+                <div class="dropdown-vn" id="avatar-dropdown" style="display:none; right:0; top:48px;">
+                    <a href="/Account/Profile" class="dropdown-vn-item"><i class="fa fa-user" style="width:16px;"></i> Hồ sơ của tôi</a>
+                    <a href="/Account/EditProfile" class="dropdown-vn-item"><i class="fa fa-gear" style="width:16px;"></i> Cài đặt</a>
+                    <hr style="margin:4px 0; border-color:#E8EAF0;">
+                    <form asp-controller="Account" asp-action="Logout" method="post" style="margin:0;">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="dropdown-vn-item danger" style="width:100%; text-align:left; border:none; background:none; cursor:pointer; padding:11px 16px; font-family:inherit; font-size:13.5px;">
+                            <i class="fa fa-sign-out-alt" style="width:16px;"></i> Đăng xuất
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- PAGE LAYOUT -->
+    <div class="page-wrapper">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <a href="/" class="sidebar-nav-item @(ViewData["ActiveNav"]?.ToString() == "home" ? "active" : "")">
+                <i class="fa fa-home"></i> Trang chủ
+            </a>
+            <a href="/Account/Profile" class="sidebar-nav-item @(ViewData["ActiveNav"]?.ToString() == "profile" ? "active" : "")">
+                <i class="fa fa-user"></i> Hồ sơ
+            </a>
+            <a href="/Messages" class="sidebar-nav-item @(ViewData["ActiveNav"]?.ToString() == "messages" ? "active" : "")">
+                <i class="fa fa-comment-dots"></i> Tin nhắn
+            </a>
+            <a href="#" class="sidebar-nav-item" onclick="toggleNotifications(); return false;">
+                <i class="fa fa-bell"></i> Thông báo
+            </a>
+            <a href="/Account/Profile?tab=saved" class="sidebar-nav-item @(ViewData["ActiveNav"]?.ToString() == "saved" ? "active" : "")">
+                <i class="fa fa-bookmark"></i> Đã lưu
+            </a>
+
+            <hr class="sidebar-divider" />
+            <span class="sidebar-section-label">Khám phá</span>
+
+            <a href="/Search?q=" class="sidebar-nav-item">
+                <i class="fa fa-users"></i> Tìm bạn bè
+            </a>
+            <a href="#" class="sidebar-nav-item">
+                <i class="fa fa-fire"></i> Xu hướng
+            </a>
+            <a href="#" class="sidebar-nav-item">
+                <i class="fa fa-hashtag"></i> Chủ đề
+            </a>
+
+            <hr class="sidebar-divider" />
+            <div style="padding: 8px 14px;">
+                <div style="font-size:12px; color:#9A9AB4; font-weight:500;">Đăng nhập với tư cách</div>
+                <div style="font-size:13.5px; font-weight:600; color:#1A1A2E; margin-top:4px;">@(currentUser?.FullName ?? currentUser?.UserName)</div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            @RenderBody()
+        </main>
+    </div>
+}
+else
+{
+    @RenderBody()
+}
+
+<!-- Share Modal -->
+<div class="modal-overlay" id="shareModal">
+    <div class="modal-box">
+        <div class="modal-title"><i class="fa fa-share-nodes"></i> Chia sẻ bài viết</div>
+        <div class="share-link-row">
+            <input type="text" id="shareUrl" readonly />
+            <button class="btn-copy" onclick="copyShareLink()">
+                <i class="fa fa-copy"></i> Sao chép
+            </button>
+        </div>
+        <div style="margin-top:14px; display:flex; gap:12px; flex-wrap:wrap;">
+            <button class="composer-tool-btn" onclick="shareToFacebook()"><i class="fab fa-facebook" style="color:#1877F2;"></i> Facebook</button>
+            <button class="composer-tool-btn" onclick="shareToTwitter()"><i class="fab fa-twitter" style="color:#1DA1F2;"></i> Twitter</button>
+        </div>
+        <button onclick="closeShareModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:18px;cursor:pointer;color:#9A9AB4;">✕</button>
+    </div>
+</div>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script>
+    // Avatar dropdown toggle
+    const avatarBtn = document.getElementById('nav-avatar-btn');
+    const avatarDropdown = document.getElementById('avatar-dropdown');
+    if (avatarBtn && avatarDropdown) {
+        avatarBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            avatarDropdown.style.display = avatarDropdown.style.display === 'none' ? 'block' : 'none';
+        });
+        document.addEventListener('click', () => { avatarDropdown.style.display = 'none'; });
+    }
+
+    // Share modal
+    function openShareModal(postId) {
+        const url = window.location.origin + '/Post/Detail/' + postId;
+        document.getElementById('shareUrl').value = url;
+        document.getElementById('shareModal').classList.add('show');
+    }
+
+    function closeShareModal() {
+        document.getElementById('shareModal').classList.remove('show');
+    }
+
+    function copyShareLink() {
+        const input = document.getElementById('shareUrl');
+        navigator.clipboard.writeText(input.value).then(() => {
+            const btn = document.querySelector('.btn-copy');
+            btn.innerHTML = '<i class="fa fa-check"></i> Đã sao chép!';
+            setTimeout(() => { btn.innerHTML = '<i class="fa fa-copy"></i> Sao chép'; }, 2000);
+        });
+    }
+
+    function shareToFacebook() {
+        const url = encodeURIComponent(document.getElementById('shareUrl').value);
+        window.open('https://www.facebook.com/sharer/sharer.php?u=' + url, '_blank');
+    }
+
+    function shareToTwitter() {
+        const url = encodeURIComponent(document.getElementById('shareUrl').value);
+        window.open('https://twitter.com/intent/tweet?url=' + url, '_blank');
+    }
+
+    document.getElementById('shareModal')?.addEventListener('click', function(e) {
+        if (e.target === this) closeShareModal();
+    });
+
+    // Auto-resize textarea
+    document.querySelectorAll('textarea[data-autoresize]').forEach(el => {
+        el.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+        });
+    });
+
+// ----- Notification Setup -----
+async function loadNotifications() {
+    try {
+        const res = await fetch('/Notification/GetLatest');
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        const badge = document.getElementById('notif-badge');
+        if (data.unreadCount > 0) {
+            badge.textContent = data.unreadCount > 99 ? '99+' : data.unreadCount;
+            badge.classList.remove('d-none');
+        } else {
+            badge.classList.add('d-none');
+        }
+
+        const list = document.getElementById('notif-list');
+        if (data.latest && data.latest.length > 0) {
+            list.innerHTML = data.latest.map(n => `
+                <a href="${n.linkUri}" onclick="markRead(${n.id})" style="display:flex; padding:12px 16px; gap:12px; text-decoration:none; color:inherit; border-bottom:1px solid var(--border); background:${n.isRead ? '#fff' : '#f0f9ff'}; transition:background 0.2s;">
+                    <div style="width:40px; height:40px; border-radius:50%; background:#e2e8f0; overflow:hidden; flex-shrink:0; display:flex;align-items:center;justify-content:center;color:var(--text-medium);font-weight:600;">
+                        ${n.senderAvatar ? `<img src="${n.senderAvatar}" style="width:100%;height:100%;object-fit:cover;" />` : n.senderName.charAt(0).toUpperCase()}
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-size:14.5px; color:var(--text-dark); margin-bottom:4px;">${n.message}</div>
+                        <div style="font-size:12px; color:${n.isRead ? '#94a3b8' : 'var(--primary)'};"><i class="fa fa-clock"></i> ${new Date(n.createdAt).toLocaleString('vi-VN')}</div>
+                    </div>
+                </a>
+            `).join('');
+        } else {
+            list.innerHTML = '<div style="padding:30px; text-align:center; color:var(--text-light); font-size:14px;">Chưa có thông báo nào.</div>';
+        }
+    } catch(err) { console.error('Failed to load notifications', err); }
+}
+
+function toggleNotifications() {
+    const el = document.getElementById('notif-dropdown');
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    if(el.style.display === 'block') { loadNotifications(); }
+}
+
+document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('notif-dropdown');
+    const btn = document.getElementById('nav-notifications');
+    if (dropdown && btn && !dropdown.contains(e.target) && !btn.contains(e.target) && !e.target.closest('#nav-notifications')) {
+        dropdown.style.display = 'none';
+    }
+});
+
+async function markRead(id) {
+    try { await fetch('/Notification/MarkRead/' + id, { method: 'POST' }); } catch(err){}
+}
+
+async function markAllRead() {
+    try {
+        await fetch('/Notification/MarkAllRead', { method: 'POST' });
+        loadNotifications();
+    } catch(err) {}
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('notif-badge')) {
+        loadNotifications();
+        setInterval(loadNotifications, 30000); // reload every 30s
+    }
+});
+</script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

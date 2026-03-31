@@ -1,0 +1,261 @@
+@using vnfood.Models
+@using vnfood.ViewModels
+@model SearchViewModel
+@{
+    var currentUser = ViewBag.CurrentUser as ApplicationUser;
+    var likedPostIds = Model.LikedPostIds;
+    var currentAvatarInitial = currentUser?.FullName?.FirstOrDefault().ToString() ?? currentUser?.UserName?.FirstOrDefault().ToString() ?? "?";
+}
+
+<div style="max-width: 860px; margin: 0 auto; margin-top: 20px;">
+    <!-- Large Search Input -->
+    <div style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 24px;">
+        <form action="/Search" method="get" style="display:flex; gap:12px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:250px; position:relative;">
+                <i class="fa fa-search" style="position:absolute; left:16px; top:50%; transform:translateY(-50%); color:#9CA3AF; font-size:18px;"></i>
+                <input type="text" name="q" value="@Model.Query" placeholder="Nhập tên người dùng, bạn bè, món ăn..." required style="width:100%; padding:14px 14px 14px 48px; border:2px solid #E5E7EB; border-radius:8px; font-size:16px; outline:none; transition:0.2s; box-sizing:border-box;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='#E5E7EB'" />
+            </div>
+            <button type="submit" class="btn-primary-vn" style="padding:0 32px; height:52px; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer;"><i class="fa fa-search"></i> Tìm kiếm</button>
+        </form>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Query))
+    {
+        <h2 style="font-size:20px; font-weight:700; color:var(--text-dark); margin-bottom:20px;">
+            Kết quả cho: "@Model.Query"
+        </h2>
+    }
+
+    @if (string.IsNullOrWhiteSpace(Model.Query))
+    {
+        <div class="card-vn">
+            <div class="empty-state">
+                <div class="empty-state-icon" style="font-size:54px; margin-bottom:12px;">👋</div>
+                <div class="empty-state-title" style="font-size:20px;">Tìm kiếm cộng đồng Bếp Việt</div>
+                <div class="empty-state-sub" style="font-size:15px; margin-top:8px;">Hãy nhập tên người bạn muốn làm quen hoặc món ăn bạn muốn học vào ô trống bên trên.</div>
+            </div>
+        </div>
+    }
+    else if (!Model.Users.Any() && !Model.Posts.Any())
+    {
+        <div class="card-vn">
+            <div class="empty-state">
+                <div class="empty-state-icon">🤷</div>
+                <div class="empty-state-title">Không tìm thấy kết quả nào</div>
+                <div class="empty-state-sub">Hãy thử với từ khóa khác!</div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Users Section -->
+        @if (Model.Users.Any())
+        {
+            <div class="right-panel-title" style="margin-bottom: 16px;">Mọi người</div>
+            <div class="card-vn" style="margin-bottom: 24px;">
+                @foreach (var user in Model.Users)
+                {
+                    <div class="suggest-user" style="padding: 12px 0; border-bottom: 1px solid var(--border); margin-bottom: 0;">
+                        <div class="suggest-avatar" style="overflow:hidden; width: 48px; height: 48px;">
+                            @if (!string.IsNullOrEmpty(user.AvatarUrl))
+                            {
+                                <img src="@user.AvatarUrl" alt="@user.FullName" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />
+                            }
+                            else
+                            {
+                                @(user.FullName?.FirstOrDefault().ToString()?.ToUpper() ?? user.UserName?.FirstOrDefault().ToString()?.ToUpper() ?? "?")
+                            }
+                        </div>
+                        <div class="suggest-info" style="margin-left: 12px;">
+                            <a href="/Account/Profile?userId=@user.Id" class="suggest-name" style="text-decoration:none; color:inherit; font-size: 16px;">@(user.FullName ?? user.UserName)</a>
+                            <div class="suggest-meta">@@@user.UserName</div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <a href="/Messages?userId=@user.Id" class="btn-primary-vn" style="padding: 8px 16px; font-size: 13px; text-decoration: none; border-radius: 6px; background:#fff; color:#1A1A2E; border:1px solid #E5E7EB;">Nhắn tin</a>
+                            <a href="/Account/Profile?userId=@user.Id" class="btn-primary-vn" style="padding: 8px 16px; font-size: 13px; text-decoration: none; border-radius: 6px;">Xem hồ sơ</a>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Posts Section -->
+        @if (Model.Posts.Any())
+        {
+            <div class="right-panel-title" style="margin-bottom: 16px;">Bài viết</div>
+            @foreach (var post in Model.Posts)
+            {
+                var isLiked = likedPostIds.Contains(post.Id);
+                var postInitial = post.User?.FullName?.FirstOrDefault().ToString() ?? post.User?.UserName?.FirstOrDefault().ToString() ?? "?";
+                
+                <div class="post-card" id="post-@post.Id">
+                    <div class="post-header">
+                        <a href="/Account/Profile?userId=@post.UserId" class="post-avatar">
+                            @if (!string.IsNullOrEmpty(post.User?.AvatarUrl))
+                            {
+                                <img src="@post.User.AvatarUrl" alt="@post.User.FullName" />
+                            }
+                            else
+                            {
+                                @postInitial.ToUpper()
+                            }
+                        </a>
+                        <div class="post-meta">
+                            <a href="/Account/Profile?userId=@post.UserId" class="post-author">@(post.User?.FullName ?? post.User?.UserName)</a>
+                            <div class="post-time"><i class="fa fa-clock" style="font-size:11px;"></i> @post.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(post.Content))
+                    {
+                        <div class="post-content">@post.Content</div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(post.ImageUrl))
+                    {
+                        <img src="@post.ImageUrl" alt="Ảnh bài viết" class="post-image" loading="lazy" />
+                    }
+
+                    <div class="post-stats">
+                        <div class="post-stat-item">
+                            <span style="color:#EF4444;">❤️</span>
+                            <span id="like-count-@post.Id">@post.Likes.Count</span> lượt thích
+                        </div>
+                        <div class="post-stat-item">
+                            <span>@post.Comments.Count bình luận</span>
+                        </div>
+                    </div>
+
+                    <div class="post-actions">
+                        <button class="post-action-btn @(isLiked ? "liked" : "")"
+                                id="like-btn-@post.Id"
+                                onclick="toggleLike(@post.Id)">
+                            <i class="@(isLiked ? "fa fa-heart" : "fa-regular fa-heart")"></i>
+                            @(isLiked ? "Đã thích" : "Thích")
+                        </button>
+                        <button class="post-action-btn" onclick="toggleComments(@post.Id)" id="comment-toggle-@post.Id">
+                            <i class="fa-regular fa-comment"></i> Bình luận
+                        </button>
+                        <button class="post-action-btn" onclick="openShareModal(@post.Id)" id="share-btn-@post.Id">
+                            <i class="fa-regular fa-share-from-square"></i> Chia sẻ
+                        </button>
+                    </div>
+
+                    <div class="comments-section d-none" id="comments-@post.Id">
+                        <div id="comment-list-@post.Id">
+                            @foreach (var comment in post.Comments.OrderByDescending(c => c.CreatedAt).Take(3))
+                            {
+                                var cInitial = comment.User?.FullName?.FirstOrDefault().ToString() ?? "?";
+                                <div class="comment-item">
+                                    <div class="comment-avatar">
+                                        @if (!string.IsNullOrEmpty(comment.User?.AvatarUrl))
+                                        {
+                                            <img src="@comment.User.AvatarUrl" alt="@comment.User.FullName" />
+                                        }
+                                        else { @cInitial.ToUpper() }
+                                    </div>
+                                    <div class="comment-bubble">
+                                        <a href="/Account/Profile?userId=@comment.UserId" class="comment-author">@(comment.User?.FullName ?? comment.User?.UserName)</a>
+                                        <div class="comment-text">@comment.Content</div>
+                                        <div class="comment-time">@comment.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        <div class="comment-input-row">
+                            <div class="comment-avatar">
+                                @if (!string.IsNullOrEmpty(currentUser?.AvatarUrl))
+                                {
+                                    <img src="@currentUser.AvatarUrl" alt="" />
+                                }
+                                else { @currentAvatarInitial.ToUpper() }
+                            </div>
+                            <div class="comment-input-wrap">
+                                <input type="text" placeholder="Viết bình luận..." 
+                                       id="comment-input-@post.Id"
+                                       onkeydown="if(event.key==='Enter') submitComment(@post.Id)" />
+                                <button class="comment-send-btn" onclick="submitComment(@post.Id)" id="comment-send-@post.Id">
+                                    <i class="fa fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    }
+</div>
+
+@section Scripts {
+    <form id="anti-forgery-form" style="display:none;">@Html.AntiForgeryToken()</form>
+    <script>
+        // Copy toggleLike + toggleComments + submitComment from Index.cshtml reusing logic
+        async function toggleLike(postId) {
+            const btn = document.getElementById('like-btn-' + postId);
+            const icon = btn.querySelector('i');
+            const countEl = document.getElementById('like-count-' + postId);
+            try {
+                const token = document.querySelector('#anti-forgery-form input[name="__RequestVerificationToken"]').value;
+                const res = await fetch('/Post/ToggleLike/' + postId, {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': token }
+                });
+                const data = await res.json();
+                if (data.isLiked) {
+                    btn.classList.add('liked');
+                    icon.className = 'fa fa-heart';
+                    btn.innerHTML = '<i class="fa fa-heart"></i> Đã thích';
+                } else {
+                    btn.classList.remove('liked');
+                    btn.innerHTML = '<i class="fa-regular fa-heart"></i> Thích';
+                }
+                countEl.textContent = data.count;
+            } catch(e) { console.error(e); }
+        }
+
+        function toggleComments(postId) {
+            const section = document.getElementById('comments-' + postId);
+            section.classList.toggle('d-none');
+            if (!section.classList.contains('d-none')) {
+                document.getElementById('comment-input-' + postId)?.focus();
+            }
+        }
+
+        async function submitComment(postId) {
+            const input = document.getElementById('comment-input-' + postId);
+            const content = input.value.trim();
+            if (!content) return;
+            const token = document.querySelector('#anti-forgery-form input[name="__RequestVerificationToken"]').value;
+            try {
+                const res = await fetch('/Post/AddComment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({ postId, content })
+                });
+                const data = await res.json();
+                const list = document.getElementById('comment-list-' + postId);
+                const div = document.createElement('div');
+                div.className = 'comment-item';
+                const avatarContent = data.avatarUrl
+                    ? `<img src="${data.avatarUrl}" alt="${data.author}" />`
+                    : data.author.charAt(0).toUpperCase();
+                div.innerHTML = `
+                    <div class="comment-avatar">${avatarContent}</div>
+                    <div class="comment-bubble">
+                        <span class="comment-author">${data.author}</span>
+                        <div class="comment-text">${data.content}</div>
+                        <div class="comment-time">Vừa xong</div>
+                    </div>`;
+                list.prepend(div);
+                input.value = '';
+                const statsEl = document.querySelector(`#post-${postId} .post-stats .post-stat-item:last-child span`);
+                if (statsEl) {
+                    statsEl.textContent = parseInt(statsEl.textContent) + 1;
+                }
+            } catch(e) { console.error(e); }
+        }
+    </script>
+}

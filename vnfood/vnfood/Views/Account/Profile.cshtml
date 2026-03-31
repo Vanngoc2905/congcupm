@@ -1,0 +1,274 @@
+@using vnfood.Models
+@{
+    ViewData["Title"] = "Hồ sơ";
+    ViewData["ActiveNav"] = "profile";
+    var profileUser = ViewBag.ProfileUser as ApplicationUser;
+    var posts = ViewBag.Posts as List<vnfood.Models.Post>;
+    var isOwner = (bool)(ViewBag.IsOwner ?? false);
+    var initial = profileUser?.FullName?.FirstOrDefault().ToString() ?? profileUser?.UserName?.FirstOrDefault().ToString() ?? "?";
+}
+
+<div style="max-width: 860px; margin: 0 auto;">
+    <!-- Profile Card -->
+    <div class="card-vn" style="margin-bottom: 20px;">
+        <!-- Cover Photo -->
+        <div class="profile-cover">
+            <i class="fa fa-image"></i>
+            @if (isOwner)
+            {
+                <button class="profile-cover-edit">
+                    <i class="fa fa-camera"></i> Đổi ảnh bìa
+                </button>
+            }
+        </div>
+
+        <!-- Profile Info -->
+        <div class="profile-info-section">
+            <div style="display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                <div class="profile-avatar-wrap">
+                    <div class="profile-avatar">
+                        @if (!string.IsNullOrEmpty(profileUser?.AvatarUrl))
+                        {
+                            <img src="@profileUser.AvatarUrl" alt="@profileUser.FullName" />
+                        }
+                        else
+                        {
+                            @initial.ToUpper()
+                        }
+                    </div>
+                </div>
+                @if (isOwner)
+                {
+                    <a href="/Account/EditProfile" class="btn-edit-profile" id="edit-profile-btn" style="text-decoration:none;">
+                        <i class="fa fa-pen"></i> Chỉnh sửa
+                    </a>
+                }
+                else
+                {
+                    var isFollowing = (bool)(ViewBag.IsFollowing ?? false);
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn-edit-profile @(isFollowing ? "following-btn" : "")" 
+                                style="background:@(isFollowing ? "#fff" : "#F5A623"); color:@(isFollowing ? "#1A1A2E" : "#fff"); border-color:@(isFollowing ? "#E8EAF0" : "#F5A623");"
+                                id="follow-btn" 
+                                onclick="toggleFollow('@profileUser?.Id')">
+                            <i class="@(isFollowing ? "fa fa-user-check" : "fa fa-user-plus")"></i> @(isFollowing ? "Bạn bè" : "Kết bạn")
+                        </button>
+                        <a href="/Messages?userId=@profileUser?.Id" class="btn-edit-profile" style="background:#fff; color:#1A1A2E; border-color:#E8EAF0; text-decoration:none; display:flex; align-items:center; gap:6px;">
+                            <i class="fa-regular fa-paper-plane"></i> Nhắn tin
+                        </a>
+                    </div>
+                    @Html.AntiForgeryToken()
+                }
+            </div>
+
+            <div class="profile-name">@(profileUser?.FullName ?? profileUser?.UserName)</div>
+            <div class="profile-username">@@@profileUser?.UserName?.Split('@')[0]</div>
+
+            @if (!string.IsNullOrEmpty(profileUser?.Bio))
+            {
+                <div class="profile-bio">@profileUser.Bio</div>
+            }
+
+            <div class="profile-stats">
+                <div class="profile-stat">
+                    <div class="profile-stat-value">@(posts?.Count ?? 0)</div>
+                    <div class="profile-stat-label">Bài viết</div>
+                </div>
+                <div class="profile-stat">
+                    <div class="profile-stat-value">@(ViewBag.FollowingCount ?? 0)</div>
+                    <div class="profile-stat-label">Đang kết nối</div>
+                </div>
+                <div class="profile-stat">
+                    <div class="profile-stat-value" id="followers-count">@(ViewBag.FollowersCount ?? 0)</div>
+                    <div class="profile-stat-label">Người kết nối</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs Header -->
+    <div style="display:flex; justify-content:center; gap:32px; border-bottom:1px solid #E8EAF0; margin-bottom:24px;">
+        <button class="profile-tab active" onclick="switchTab('my-posts')" id="tab-my-posts" style="background:none; border:none; border-bottom:2px solid var(--primary); padding:12px 16px; font-weight:600; font-size:15px; cursor:pointer; color:var(--primary); transition:0.2s;">
+            <i class="fa fa-th"></i> Bài viết của @(isOwner ? "tôi" : "họ")
+        </button>
+        <button class="profile-tab" onclick="switchTab('saved-posts')" id="tab-saved-posts" style="background:none; border:none; border-bottom:2px solid transparent; padding:12px 16px; font-weight:600; font-size:15px; cursor:pointer; color:var(--text-medium); transition:0.2s;">
+            <i class="fa-solid fa-bookmark"></i> Đã lưu
+        </button>
+    </div>
+
+    <!-- Posts Grid -->
+    <div id="grid-my-posts">
+        @if (posts == null || !posts.Any())
+        {
+            <div class="card-vn">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🍜</div>
+                    <div class="empty-state-title">Chưa có bài viết nào</div>
+                    <div class="empty-state-sub">
+                        @if (isOwner)
+                        {
+                            <span>Hãy chia sẻ công thức đầu tiên của bạn!</span>
+                        }
+                        else
+                        {
+                            <span>Người dùng này chưa đăng bài nào.</span>
+                        }
+                    </div>
+                    @if (isOwner)
+                    {
+                        <a href="/Post/Create" class="btn-primary-vn" style="display:inline-block; margin-top:16px; padding:10px 24px; text-decoration:none; border-radius:22px; font-size:14px;" id="post-now-btn">
+                            <i class="fa fa-plus"></i> Tạo công thức
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:4px;">
+                @foreach (var post in posts)
+                {
+                    <a href="/Post/Detail/@post.Id" style="position:relative; aspect-ratio:1; display:block; overflow:hidden; border-radius:4px; background:#F4F6F8; text-decoration:none;" class="post-grid-item">
+                        @if (!string.IsNullOrEmpty(post.ImageUrl))
+                        {
+                            <img src="@post.ImageUrl" alt="Bài viết" style="width:100%; height:100%; object-fit:cover; transition:transform 0.3s;" />
+                        }
+                        else
+                        {
+                            <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#FFF3E0,#FFF8EE); padding:14px; font-size:13px; color:#4A4A6A; text-align:center; line-height:1.4; font-weight:600;">
+                                @(post.Title ?? "Công thức")
+                            </div>
+                        }
+                    </a>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Saved Posts Grid -->
+    @{
+        var savedPosts = ViewBag.SavedPosts as List<vnfood.Models.Post>;
+    }
+    <div id="grid-saved-posts" style="display:none;">
+        @if (savedPosts == null || !savedPosts.Any())
+        {
+            <div class="card-vn">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🔖</div>
+                    <div class="empty-state-title">Chưa lưu công thức nào</div>
+                    <div class="empty-state-sub">
+                        @if (isOwner)
+                        {
+                            <span>Khi bạn bấm "Lưu" một bài viết yêu thích, nó sẽ xuất hiện ở đây.</span>
+                        }
+                        else
+                        {
+                            <span>Người dùng này chưa công khai công thức lưu trữ.</span>
+                        }
+                    </div>
+                    @if (isOwner)
+                    {
+                        <a href="/" class="btn-primary-vn" style="display:inline-block; margin-top:16px; padding:10px 24px; text-decoration:none; border-radius:22px; font-size:14px;" id="post-now-btn">
+                            <i class="fa fa-compass"></i> Khám phá ngay
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:4px;">
+                @foreach (var post in savedPosts)
+                {
+                    <a href="/Post/Detail/@post.Id" style="position:relative; aspect-ratio:1; display:block; overflow:hidden; border-radius:4px; background:#F4F6F8; text-decoration:none;" class="post-grid-item">
+                        @if (!string.IsNullOrEmpty(post.ImageUrl))
+                        {
+                            <img src="@post.ImageUrl" alt="Bài viết" style="width:100%; height:100%; object-fit:cover; transition:transform 0.3s;" />
+                        }
+                        else
+                        {
+                            <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#FFF3E0,#FFF8EE); padding:14px; font-size:13px; color:#4A4A6A; text-align:center; line-height:1.4; font-weight:600;">
+                                @(post.Title ?? "Công thức")
+                            </div>
+                        }
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+.post-grid-item:hover .post-grid-overlay {
+    background: rgba(0,0,0,0.45) !important;
+    opacity: 1 !important;
+}
+.post-grid-item:hover img {
+    transform: scale(1.05);
+}
+</style>
+
+@section Scripts {
+<script>
+    async function toggleFollow(followeeId) {
+        const btn = document.getElementById('follow-btn');
+        const countEl = document.getElementById('followers-count');
+        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+        try {
+            const res = await fetch('/Account/ToggleFollow', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: new URLSearchParams({ followeeId })
+            });
+            const data = await res.json();
+
+            if (data.isFollowing) {
+                btn.classList.add('following-btn');
+                btn.style.background = '#fff';
+                btn.style.color = '#1A1A2E';
+                btn.style.borderColor = '#E8EAF0';
+                btn.innerHTML = '<i class="fa fa-user-check"></i> Bạn bè';
+            } else {
+                btn.classList.remove('following-btn');
+                btn.style.background = '#F5A623';
+                btn.style.color = '#fff';
+                btn.style.borderColor = '#F5A623';
+                btn.innerHTML = '<i class="fa fa-user-plus"></i> Kết bạn';
+            }
+            
+            if (countEl && countEl.textContent !== undefined) {
+                countEl.textContent = data.followersCount;
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.profile-tab').forEach(el => {
+            el.classList.remove('active');
+            el.style.borderBottomColor = 'transparent';
+            el.style.color = 'var(--text-medium)';
+        });
+
+        const activeBtn = document.getElementById('tab-' + tabId);
+        activeBtn.classList.add('active');
+        activeBtn.style.borderBottomColor = 'var(--primary)';
+        activeBtn.style.color = 'var(--primary)';
+
+        document.getElementById('grid-my-posts').style.display = 'none';
+        document.getElementById('grid-saved-posts').style.display = 'none';
+
+        document.getElementById('grid-' + tabId).style.display = 'block';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('tab') === 'saved') {
+            switchTab('saved-posts');
+        }
+    });
+</script>
+}

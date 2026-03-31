@@ -1,0 +1,234 @@
+@using vnfood.Models
+@model Post
+@{
+    ViewData["Title"] = Model.Title ?? "Chi tiết công thức";
+    ViewData["ActiveNav"] = "home";
+    var currentUser = ViewBag.CurrentUser as ApplicationUser;
+    var isLiked = (bool)(ViewBag.IsLiked ?? false);
+    var postInitial = Model.User?.FullName?.FirstOrDefault().ToString() ?? "?";
+    var currentInitial = currentUser?.FullName?.FirstOrDefault().ToString() ?? "?";
+}
+
+<div style="max-width: 1000px; margin: 0 auto; padding-top: 20px;">
+    <div class="card-vn" style="padding: 0; overflow: hidden; margin-bottom: 30px;">
+        <!-- Top Details -->
+        <div style="display:flex; flex-wrap:wrap; background:#fff;">
+            <!-- Left Image -->
+            <div style="flex:1; min-width:300px; background:#f4f6f8; display:flex; align-items:center; justify-content:center; aspect-ratio:1;">
+                @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                {
+                    <img src="@Model.ImageUrl" alt="Ảnh công thức" style="width:100%; height:100%; object-fit:cover;" />
+                }
+                else
+                {
+                    <span style="color:#a8b2c1;">Không có ảnh</span>
+                }
+            </div>
+            
+            <!-- Right Info -->
+            <div style="flex:1; min-width:300px; padding:32px; display:flex; flex-direction:column;">
+                <h1 style="font-size:28px; font-weight:800; margin-bottom:20px; color:var(--text-dark);">
+                    @(Model.Title ?? "Công thức ẩm thực")
+                </h1>
+                
+                <div style="display:flex; align-items:center; gap:24px; margin-bottom:24px; color:var(--text-medium); font-size:14px; flex-wrap:wrap;">
+                    <a href="/Account/Profile?userId=@Model.UserId" style="display:flex; align-items:center; gap:8px; text-decoration:none; color:inherit;">
+                        <div style="width:32px; height:32px; border-radius:50%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                            @if (!string.IsNullOrEmpty(Model.User?.AvatarUrl))
+                            {
+                                <img src="@Model.User.AvatarUrl" style="width:100%;height:100%;object-fit:cover;" />
+                            }
+                            else
+                            {
+                                <span>@postInitial.ToUpper()</span>
+                            }
+                        </div>
+                        <span style="font-weight:600; color:var(--text-dark);">@(Model.User?.FullName ?? Model.User?.UserName)</span>
+                    </a>
+                    
+                    @if (!string.IsNullOrEmpty(Model.PrepTime))
+                    {
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <i class="fa-regular fa-clock"></i> @Model.PrepTime
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Servings))
+                    {
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <i class="fa-solid fa-user-group"></i> @Model.Servings
+                        </div>
+                    }
+                </div>
+                
+                @if (!string.IsNullOrEmpty(Model.Content))
+                {
+                    <p style="font-size:15px; line-height:1.7; color:var(--text-dark); margin-bottom:32px; flex:1;">
+                        @Html.Raw(Model.Content.Replace("\n", "<br/>"))
+                    </p>
+                }
+                
+                <div style="display:flex; gap:12px; margin-top:auto;">
+                    <button class="btn-primary-vn @(isLiked ? "liked" : "")" id="like-btn-detail" onclick="toggleLike(@Model.Id)" style="background:#f1f5f9; border:1px solid #e2e8f0; color:var(--text-dark);">
+                        <i class="@(isLiked ? "fa-solid fa-bookmark" : "fa-regular fa-bookmark")" style="color:var(--primary);"></i> 
+                        <span id="like-text">@(isLiked ? "Đã lưu (" + Model.Likes.Count + ")" : "Lưu (" + Model.Likes.Count + ")")</span>
+                    </button>
+                    <button class="btn-primary-vn" style="background:#f1f5f9; border:1px solid #e2e8f0; color:var(--text-dark);" onclick="openShareModal(@Model.Id)">
+                        <i class="fa-solid fa-share-nodes"></i> Chia sẻ
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Ingredients and Instructions Grid -->
+        <div style="display:flex; flex-wrap:wrap; border-top:1px solid var(--border);">
+            <!-- Ingredients -->
+            <div style="flex:1; min-width:300px; padding:32px; border-right:1px solid var(--border); box-sizing:border-box;">
+                <h3 style="font-size:18px; font-weight:700; margin-bottom:24px; color:var(--text-dark);">NGUYÊN LIỆU</h3>
+                @if (!string.IsNullOrEmpty(Model.Ingredients))
+                {
+                    <ul style="padding-left:24px; color:var(--text-dark); line-height:2.2; font-size:15px;">
+                        @foreach (var item in Model.Ingredients.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            <li style="margin-bottom:8px;">@item</li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div style="color:var(--text-medium); font-size:14px; font-style:italic;">Bức ảnh / Bài viết này không có danh sách nguyên liệu.</div>
+                }
+            </div>
+            
+            <!-- Instructions -->
+            <div style="flex:1; min-width:300px; padding:32px; box-sizing:border-box;">
+                <h3 style="font-size:18px; font-weight:700; margin-bottom:24px; color:var(--text-dark);">CÁCH LÀM</h3>
+                @if (!string.IsNullOrEmpty(Model.Instructions))
+                {
+                    <ol style="padding-left:24px; color:var(--text-dark); line-height:2.2; font-size:15px;">
+                        @foreach (var step in Model.Instructions.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            <li style="margin-bottom:12px; padding-left:8px;">@step</li>
+                        }
+                    </ol>
+                }
+                else
+                {
+                    <div style="color:var(--text-medium); font-size:14px; font-style:italic;">Bài viết này không có dánh sách các bước thực hiện.</div>
+                }
+            </div>
+        </div>
+        
+        <!-- Sub Images Section -->
+        @if (!string.IsNullOrEmpty(Model.ImageUrl2) || !string.IsNullOrEmpty(Model.ImageUrl3) || !string.IsNullOrEmpty(Model.ImageUrl4))
+        {
+            <div style="padding:32px; border-top:1px solid var(--border); display:flex; gap:20px; flex-wrap:wrap; background:#f8fafc;">
+                @if (!string.IsNullOrEmpty(Model.ImageUrl2)) { <img src="@Model.ImageUrl2" style="width:140px; height:140px; object-fit:cover; border-radius:12px; border:1px solid #e2e8f0; box-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1);" /> }
+                @if (!string.IsNullOrEmpty(Model.ImageUrl3)) { <img src="@Model.ImageUrl3" style="width:140px; height:140px; object-fit:cover; border-radius:12px; border:1px solid #e2e8f0; box-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1);" /> }
+                @if (!string.IsNullOrEmpty(Model.ImageUrl4)) { <img src="@Model.ImageUrl4" style="width:140px; height:140px; object-fit:cover; border-radius:12px; border:1px solid #e2e8f0; box-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1);" /> }
+            </div>
+        }
+    </div>
+
+    <!-- Comments Section -->
+    <div class="card-vn" style="padding: 32px;">
+        <h3 style="font-size:18px; font-weight:700; margin-bottom:24px; color:var(--text-dark);">
+            BÌNH LUẬN (@Model.Comments.Count)
+        </h3>
+
+        @if (currentUser != null)
+        {
+            <div class="comment-input-row" style="margin-bottom: 30px; border-bottom:1px solid var(--border); padding-bottom:30px;">
+                <div class="comment-avatar">
+                    @if (!string.IsNullOrEmpty(currentUser?.AvatarUrl))
+                    { <img src="@currentUser.AvatarUrl" alt="" /> }
+                    else { @currentInitial.ToUpper() }
+                </div>
+                <div class="comment-input-wrap">
+                    <input type="text" placeholder="Thêm bình luận hoặc câu hỏi của bạn..."
+                           id="comment-input-detail"
+                           onkeydown="if(event.key==='Enter') submitComment(@Model.Id)" />
+                    <button class="comment-send-btn" onclick="submitComment(@Model.Id)">
+                        <i class="fa fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        }
+
+        <div id="comment-list-detail">
+            @foreach (var comment in Model.Comments.OrderByDescending(c => c.CreatedAt))
+            {
+                var ci = comment.User?.FullName?.FirstOrDefault().ToString() ?? "?";
+                <div class="comment-item" style="margin-bottom:20px;">
+                    <div class="comment-avatar">
+                        @if (!string.IsNullOrEmpty(comment.User?.AvatarUrl))
+                        { <img src="@comment.User.AvatarUrl" alt="@comment.User.FullName" /> }
+                        else { @ci.ToUpper() }
+                    </div>
+                    <div class="comment-bubble" style="background:#f8fafc; border:none;">
+                        <a href="/Account/Profile?userId=@comment.UserId" class="comment-author" style="font-size:14px;">@(comment.User?.FullName ?? comment.User?.UserName)</a>
+                        <div class="comment-text" style="font-size:14.5px;">@comment.Content</div>
+                        <div class="comment-time">@comment.CreatedAt.ToLocalTime().ToString("HH:mm - dd/MM/yyyy")</div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+let currentLikesCount = parseInt("@Model.Likes.Count");
+
+async function toggleLike(postId) {
+    const btn = document.getElementById('like-btn-detail');
+    const textEl = document.getElementById('like-text');
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+    
+    try {
+        const res = await fetch('/Post/ToggleLike/' + postId, {
+            method: 'POST',
+            headers: { 'RequestVerificationToken': token ?? '' }
+        });
+        const data = await res.json();
+        
+        currentLikesCount = data.count;
+        if (data.isLiked) {
+            btn.classList.add('liked');
+            btn.innerHTML = `<i class="fa-solid fa-bookmark" style="color:var(--primary);"></i> <span id="like-text">Đã lưu (${currentLikesCount})</span>`;
+        } else {
+            btn.classList.remove('liked');
+            btn.innerHTML = `<i class="fa-regular fa-bookmark" style="color:var(--primary);"></i> <span id="like-text">Lưu (${currentLikesCount})</span>`;
+        }
+    } catch(err) { console.error(err); }
+}
+
+async function submitComment(postId) {
+    const input = document.getElementById('comment-input-detail');
+    const content = input.value.trim();
+    if (!content) return;
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+    try {
+        const res = await fetch('/Post/AddComment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token ?? '' },
+            body: JSON.stringify({ postId, content })
+        });
+        const data = await res.json();
+        const list = document.getElementById('comment-list-detail');
+        const div = document.createElement('div');
+        div.className = 'comment-item';
+        div.style.marginBottom = '20px';
+        const av = data.avatarUrl ? `<img src="${data.avatarUrl}" alt="" />` : data.author.charAt(0).toUpperCase();
+        div.innerHTML = `<div class="comment-avatar">${av}</div>
+            <div class="comment-bubble" style="background:#f8fafc; border:none;">
+                <span class="comment-author" style="font-size:14px;">${data.author}</span>
+                <div class="comment-text" style="font-size:14.5px;">${data.content}</div>
+                <div class="comment-time">Vừa xong</div>
+            </div>`;
+        list.prepend(div);
+        input.value = '';
+    } catch(err) { console.error(err); }
+}
+</script>
+@Html.AntiForgeryToken()
+}

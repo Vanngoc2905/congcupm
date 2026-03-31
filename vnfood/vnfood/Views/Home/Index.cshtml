@@ -1,0 +1,423 @@
+@using vnfood.Models
+@model List<Post>
+@{
+    ViewData["Title"] = "Trang chủ - Bếp Việt";
+    ViewData["ActiveNav"] = "home";
+    var currentUser = ViewBag.CurrentUser as ApplicationUser;
+    var likedPostIds = ViewBag.LikedPostIds as HashSet<int> ?? new HashSet<int>();
+    var initial = currentUser?.FullName?.FirstOrDefault().ToString() ?? currentUser?.UserName?.FirstOrDefault().ToString() ?? "?";
+}
+
+<div style="display:flex; gap:24px; align-items:flex-start;">
+    @Html.AntiForgeryToken()
+    <!-- Feed (center) -->
+    <div class="content-center" style="flex:1;">
+
+        <!-- TempData error/success -->
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert-vn error" style="margin-bottom:16px;"><i class="fa fa-circle-exclamation"></i> @TempData["Error"]</div>
+        }
+
+        <!-- Post Composer Button -->
+        <div class="composer" id="composer-box" style="cursor: pointer; padding: 20px; text-align: center;" onclick="window.location.href='/Post/Create'">
+            <div style="font-size: 16px; color: var(--text-medium); font-weight: 500;">
+                <i class="fa fa-pen-nib" style="color: var(--primary); margin-right: 8px;"></i>
+                Bạn muốn nấu món gì hôm nay? Chia sẻ công thức ngay!
+            </div>
+        </div>
+
+        <!-- Posts Feed -->
+        @if (!Model.Any())
+        {
+            <div class="card-vn">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🍜</div>
+                    <div class="empty-state-title">Chưa có bài viết nào</div>
+                    <div class="empty-state-sub">Hãy là người đầu tiên chia sẻ công thức!</div>
+                </div>
+            </div>
+        }
+        else
+        {
+            @foreach (var post in Model)
+            {
+                var isLiked = likedPostIds.Contains(post.Id);
+                var postInitial = post.User?.FullName?.FirstOrDefault().ToString() ?? post.User?.UserName?.FirstOrDefault().ToString() ?? "?";
+                var timeAgo = GetTimeAgo(post.CreatedAt);
+
+                <div class="post-card" id="post-@post.Id">
+                    <!-- Post Header -->
+                    <div class="post-header">
+                        <a href="/Account/Profile?userId=@post.UserId" class="post-avatar">
+                            @if (!string.IsNullOrEmpty(post.User?.AvatarUrl))
+                            {
+                                <img src="@post.User.AvatarUrl" alt="@post.User.FullName" />
+                            }
+                            else
+                            {
+                                @postInitial.ToUpper()
+                            }
+                        </a>
+                        <div class="post-meta">
+                            <a href="/Account/Profile?userId=@post.UserId" class="post-author">@(post.User?.FullName ?? post.User?.UserName)</a>
+                            <div class="post-time"><i class="fa fa-clock" style="font-size:11px;"></i> @timeAgo</div>
+                        </div>
+                        @if (currentUser?.Id == post.UserId)
+                        {
+                            <div style="position:relative;">
+                                <button class="post-menu-btn" onclick="togglePostMenu(@post.Id)" id="menu-btn-@post.Id">
+                                    <i class="fa fa-ellipsis"></i>
+                                </button>
+                                <div class="dropdown-vn" id="post-menu-@post.Id" style="display:none; right:0; top:38px;">
+                                    <form asp-controller="Post" asp-action="Delete" method="post" style="margin:0;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@post.Id" />
+                                        <button type="submit" class="dropdown-vn-item danger" style="width:100%; border:none; background:none; cursor:pointer; text-align:left; font-family:inherit; padding:11px 16px; font-size:13.5px;"
+                                                onclick="return confirm('Xóa bài viết này?')">
+                                            <i class="fa fa-trash" style="width:16px;"></i> Xóa bài
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <a href="/Post/Detail/@post.Id" style="text-decoration:none; color:inherit; display:block; transition: background 0.2s;" onmouseover="this.style.background='#fdfdfd'" onmouseout="this.style.background='transparent'">
+                        @if (!string.IsNullOrEmpty(post.Title))
+                        {
+                            <h3 style="font-size:18px; font-weight:700; margin: 8px 16px 4px; color:var(--text-dark);">@post.Title</h3>
+                        }
+                        
+                        <!-- Content -->
+                        @if (!string.IsNullOrEmpty(post.Content))
+                        {
+                            <div class="post-content">
+                                @(post.Content.Length > 150 ? post.Content.Substring(0, 150) + "..." : post.Content)
+                            </div>
+                        }
+
+                        <!-- Image -->
+                        @if (!string.IsNullOrEmpty(post.ImageUrl))
+                        {
+                            <img src="@post.ImageUrl" alt="Ảnh công thức" class="post-image" loading="lazy" />
+                        }
+                    </a>
+
+                    <!-- Stats -->
+                    <div class="post-stats">
+                        <div class="post-stat-item">
+                            <span style="color:var(--primary);"><i class="fa fa-bookmark"></i></span>
+                            <span id="like-count-@post.Id">@post.Likes.Count</span> lượt lưu
+                        </div>
+                        <div class="post-stat-item">
+                            <span>@post.Comments.Count bình luận</span>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="post-actions">
+                        <button class="post-action-btn @(isLiked ? "liked" : "")"
+                                id="like-btn-@post.Id"
+                                onclick="toggleLike(@post.Id)">
+                            <i class="@(isLiked ? "fa fa-bookmark" : "fa-regular fa-bookmark")"></i>
+                            @(isLiked ? "Đã lưu" : "Lưu")
+                        </button>
+                        <button class="post-action-btn" onclick="toggleComments(@post.Id)" id="comment-toggle-@post.Id">
+                            <i class="fa-regular fa-comment"></i> Bình luận
+                        </button>
+                        <button class="post-action-btn" onclick="openShareModal(@post.Id)" id="share-btn-@post.Id">
+                            <i class="fa-regular fa-share-from-square"></i> Chia sẻ
+                        </button>
+                    </div>
+
+                    <!-- Comments Section -->
+                    <div class="comments-section d-none" id="comments-@post.Id">
+                        <!-- Existing comments -->
+                        <div id="comment-list-@post.Id">
+                            @foreach (var comment in post.Comments.OrderByDescending(c => c.CreatedAt).Take(3))
+                            {
+                                var cInitial = comment.User?.FullName?.FirstOrDefault().ToString() ?? "?";
+                                <div class="comment-item">
+                                    <div class="comment-avatar">
+                                        @if (!string.IsNullOrEmpty(comment.User?.AvatarUrl))
+                                        {
+                                            <img src="@comment.User.AvatarUrl" alt="@comment.User.FullName" />
+                                        }
+                                        else { @cInitial.ToUpper() }
+                                    </div>
+                                    <div class="comment-bubble">
+                                        <a href="/Account/Profile?userId=@comment.UserId" class="comment-author">@(comment.User?.FullName ?? comment.User?.UserName)</a>
+                                        <div class="comment-text">@comment.Content</div>
+                                        <div class="comment-time">@GetTimeAgo(comment.CreatedAt)</div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Comment Input -->
+                        <div class="comment-input-row">
+                            <div class="comment-avatar">
+                                @if (!string.IsNullOrEmpty(currentUser?.AvatarUrl))
+                                {
+                                    <img src="@currentUser.AvatarUrl" alt="" />
+                                }
+                                else { @initial.ToUpper() }
+                            </div>
+                            <div class="comment-input-wrap">
+                                <input type="text" placeholder="Viết bình luận..." 
+                                       id="comment-input-@post.Id"
+                                       onkeydown="if(event.key==='Enter') submitComment(@post.Id)" />
+                                <button class="comment-send-btn" onclick="submitComment(@post.Id)" id="comment-send-@post.Id">
+                                    <i class="fa fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <!-- Right Panel (suggestions) -->
+    <div class="right-panel" style="margin-top:0; padding-top:0;">
+        <div class="right-panel-card">
+            <div class="right-panel-title">Gợi ý kết bạn</div>
+            @if (ViewBag.SuggestedUsers != null && ((List<ApplicationUser>)ViewBag.SuggestedUsers).Any())
+            {
+                foreach (var user in (List<ApplicationUser>)ViewBag.SuggestedUsers)
+                {
+                    <div class="suggest-user" id="suggest-@user.Id">
+                        <div class="suggest-avatar" style="overflow:hidden;">
+                            @if (!string.IsNullOrEmpty(user.AvatarUrl))
+                            {
+                                <img src="@user.AvatarUrl" alt="@user.FullName" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />
+                            }
+                            else
+                            {
+                                @(user.FullName?.FirstOrDefault().ToString()?.ToUpper() ?? user.UserName?.FirstOrDefault().ToString()?.ToUpper() ?? "?")
+                            }
+                        </div>
+                        <div class="suggest-info">
+                            <a href="/Account/Profile?userId=@user.Id" class="suggest-name" style="text-decoration:none; color:inherit;">@(user.FullName ?? user.UserName)</a>
+                            <div class="suggest-meta">Gợi ý cho bạn</div>
+                        </div>
+                        <button class="btn-follow" id="follow-btn-@user.Id" onclick="toggleFollowSuggested('@user.Id')">Kết bạn</button>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="text-align:center; padding: 20px 10px; color:var(--text-medium);">
+                    <div style="font-size:32px; margin-bottom:12px;">👋</div>
+                    <div style="font-size:14px; margin-bottom:16px;">Chưa có bạn bè rảnh rỗi.</div>
+                    <a href="/Search?q=" class="btn-primary-vn" style="text-decoration:none; display:inline-block; font-size:13px; padding:8px 16px; width:100%; box-sizing:border-box;">Tìm kiếm cộng đồng</a>
+                </div>
+            }
+        </div>
+
+        <div class="right-panel-card">
+            <div class="right-panel-title">🔥 Xu hướng hôm nay</div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <a href="#" style="text-decoration:none; color:var(--text-medium); font-size:13px;">#PhoTruyenThong</a>
+                <a href="#" style="text-decoration:none; color:var(--text-medium); font-size:13px;">#BanhMiSaiGon</a>
+                <a href="#" style="text-decoration:none; color:var(--text-medium); font-size:13px;">#ComTamBinhDan</a>
+                <a href="#" style="text-decoration:none; color:var(--text-medium); font-size:13px;">#BunBoHue</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // ===== Composer logic =====
+    const textarea = document.getElementById('post-content');
+    const submitBtn = document.getElementById('btn-submit-post');
+    const hiddenContent = document.getElementById('hidden-content');
+    const imageInput = document.getElementById('post-image-input');
+    let selectedFile = null;
+
+    function checkPostReady() {
+        const hasText = textarea.value.trim().length > 0;
+        const hasImage = selectedFile != null;
+        submitBtn.disabled = !hasText && !hasImage;
+    }
+
+    textarea.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+        checkPostReady();
+    });
+
+    imageInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            selectedFile = this.files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('img-preview-el').src = e.target.result;
+                document.getElementById('img-preview-box').classList.remove('d-none');
+            };
+            reader.readAsDataURL(selectedFile);
+            checkPostReady();
+        }
+    });
+
+    function removeImage() {
+        selectedFile = null;
+        imageInput.value = '';
+        document.getElementById('img-preview-box').classList.add('d-none');
+        document.getElementById('img-preview-el').src = '';
+        checkPostReady();
+    }
+
+    document.getElementById('post-form').addEventListener('submit', function(e) {
+        hiddenContent.value = textarea.value;
+        if (selectedFile) {
+            const dt = new DataTransfer();
+            dt.items.add(selectedFile);
+            document.getElementById('hidden-image').files = dt.files;
+        }
+    });
+
+    // ===== Like toggle =====
+    async function toggleLike(postId) {
+        const btn = document.getElementById('like-btn-' + postId);
+        
+        // Theo yêu cầu: nếu nút đang hiện "Đã lưu", khi ấn vào lập tức chuyển về profile
+        if (btn.classList.contains('liked')) {
+            window.location.href = '/Account/Profile?tab=saved';
+            return;
+        }
+
+        const icon = btn.querySelector('i');
+        const countEl = document.getElementById('like-count-' + postId);
+
+        try {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const res = await fetch('/Post/ToggleLike/' + postId, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token }
+            });
+            const data = await res.json();
+
+            if (data.isLiked) {
+                btn.classList.add('liked');
+                btn.innerHTML = '<i class="fa fa-bookmark"></i> Đã lưu';
+            } else {
+                btn.classList.remove('liked');
+                btn.innerHTML = '<i class="fa-regular fa-bookmark"></i> Lưu';
+            }
+            if (countEl && countEl.textContent !== undefined) {
+                countEl.textContent = data.count;
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    // ===== Comment toggle =====
+    function toggleComments(postId) {
+        const section = document.getElementById('comments-' + postId);
+        section.classList.toggle('d-none');
+        if (!section.classList.contains('d-none')) {
+            document.getElementById('comment-input-' + postId)?.focus();
+        }
+    }
+
+    // ===== Submit comment =====
+    async function submitComment(postId) {
+        const input = document.getElementById('comment-input-' + postId);
+        const content = input.value.trim();
+        if (!content) return;
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        try {
+            const res = await fetch('/Post/AddComment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({ postId, content })
+            });
+            const data = await res.json();
+
+            const list = document.getElementById('comment-list-' + postId);
+            const div = document.createElement('div');
+            div.className = 'comment-item';
+            const avatarContent = data.avatarUrl
+                ? `<img src="${data.avatarUrl}" alt="${data.author}" />`
+                : data.author.charAt(0).toUpperCase();
+            div.innerHTML = `
+                <div class="comment-avatar">${avatarContent}</div>
+                <div class="comment-bubble">
+                    <span class="comment-author">${data.author}</span>
+                    <div class="comment-text">${data.content}</div>
+                    <div class="comment-time">Vừa xong</div>
+                </div>`;
+            list.prepend(div);
+            input.value = '';
+
+            // Update comment count
+            const statsEl = document.querySelector(`#post-${postId} .post-stats .post-stat-item:last-child span`);
+            if (statsEl) {
+                const count = parseInt(statsEl.textContent) + 1;
+                statsEl.textContent = count;
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    // ===== Post menu dropdown =====
+    function togglePostMenu(postId) {
+        const menu = document.getElementById('post-menu-' + postId);
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+
+    document.addEventListener('click', function(e) {
+        document.querySelectorAll('[id^="post-menu-"]').forEach(m => {
+            if (!m.contains(e.target) && !e.target.closest('[id^="menu-btn-"]')) {
+                m.style.display = 'none';
+            }
+        });
+    });
+
+    async function toggleFollowSuggested(followeeId) {
+        const btn = document.getElementById('follow-btn-' + followeeId);
+        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        try {
+            const res = await fetch('/Account/ToggleFollow', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: new URLSearchParams({ followeeId })
+            });
+            const data = await res.json();
+            if (data.isFollowing) {
+                btn.classList.add('following-btn');
+                btn.style.background = '#fff';
+                btn.style.color = '#1A1A2E';
+                btn.style.borderColor = '#E8EAF0';
+                btn.innerHTML = '<i class="fa fa-user-check"></i> Bạn bè';
+            } else {
+                btn.classList.remove('following-btn');
+                btn.style.background = '#F5A623';
+                btn.style.color = '#fff';
+                btn.style.borderColor = '#F5A623';
+                btn.innerHTML = 'Kết bạn';
+            }
+        } catch(e) { console.error(e); }
+    }
+</script>
+}
+
+@functions {
+    string GetTimeAgo(DateTime dt)
+    {
+        var diff = DateTime.UtcNow - dt;
+        if (diff.TotalSeconds < 60) return "Vừa xong";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes} phút trước";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours} giờ trước";
+        if (diff.TotalDays < 7) return $"{(int)diff.TotalDays} ngày trước";
+        return dt.ToLocalTime().ToString("dd/MM/yyyy");
+    }
+}
