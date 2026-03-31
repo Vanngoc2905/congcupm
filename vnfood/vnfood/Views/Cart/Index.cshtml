@@ -1,0 +1,116 @@
+@model List<vnfood.Models.CartItem>
+@{
+    ViewData["Title"] = "Giỏ hàng";
+    ViewData["ActiveNav"] = "cart";
+    decimal total = Model.Sum(i => 
+        (i.Post != null ? (i.Post.Price ?? 0) : 0) * i.Quantity +
+        (i.Product != null ? i.Product.Price : 0) * i.Quantity
+    );
+}
+
+<div style="max-width: 1100px; margin: 0 auto; padding-top: 30px;">
+    <h1 style="font-size:24px; font-weight:800; margin-bottom:24px; color: var(--text-dark); display:flex; align-items:center; gap:12px;">
+        <i class="fa fa-shopping-basket" style="color:var(--primary);"></i> Giỏ hàng của bạn
+    </h1>
+
+    @if (!Model.Any())
+    {
+        <div class="card-vn" style="padding: 60px 20px; text-align:center;">
+            <div style="font-size:64px; color:#e2e8f0; margin-bottom:20px;"><i class="fa fa-cart-plus"></i></div>
+            <h2 style="font-size:20px; color:var(--text-dark); margin-bottom:12px;">Giỏ hàng trống</h2>
+            <p style="color:var(--text-medium); margin-bottom:24px;">Hãy khám phá các sản phẩm và món ăn ngon nhé!</p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <a href="/" class="btn-primary-vn" style="display:inline-block; background:#f1f5f9; color:#475569; text-decoration:none; padding:10px 24px;">Khám phá Công thức</a>
+                <a href="/Shop" class="btn-primary-vn" style="display:inline-block; background:var(--primary); color:#fff; text-decoration:none; padding:10px 24px;">Đến Chợ Bếp Việt</a>
+            </div>
+        </div>
+    }
+    else
+    {
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert-vn error" style="margin-bottom: 16px;"><i class="fa fa-circle-exclamation"></i> @TempData["Error"]</div>
+        }
+
+        <div style="display:grid; grid-template-columns: 1fr 380px; gap:24px; align-items: start;">
+            <div class="card-vn" style="padding:0; overflow:hidden;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="border-bottom:1px solid var(--border); background:#f8fafc;">
+                            <th style="padding:16px; text-align:left; font-size:13px; color:var(--text-medium); font-weight:600;">SẢN PHẨM</th>
+                            <th style="padding:16px; text-align:center; font-size:13px; color:var(--text-medium); font-weight:600;">SỐ LƯỢNG</th>
+                            <th style="padding:16px; text-align:right; font-size:13px; color:var(--text-medium); font-weight:600;">THÀNH TIỀN</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            var name = item.Post?.Title ?? item.Product?.Name;
+                            var price = item.Post != null ? (item.Post.Price ?? 0) : (item.Product?.Price ?? 0);
+                            var img = item.Post?.ImageUrl ?? item.Product?.ImageUrl;
+                            var link = item.Post != null ? $"/Post/Detail/{item.PostId}" : $"/Product/Detail/{item.ProductId}";
+                            var isProduct = item.Product != null;
+
+                            <tr style="border-bottom:1px solid var(--border);">
+                                <td style="padding:16px;">
+                                    <div style="display:flex; gap:16px; align-items:center;">
+                                        <div style="width:70px; height:70px; border-radius:8px; overflow:hidden; background:#f1f5f9; flex-shrink:0;">
+                                            @if (!string.IsNullOrEmpty(img))
+                                            { <img src="@img" style="width:100%; height:100%; object-fit:cover;" /> }
+                                        </div>
+                                        <div>
+                                            <a href="@link" style="font-weight:700; color:var(--text-dark); text-decoration:none; display:block; margin-bottom:4px; font-size:15px;">@name</a>
+                                            <div style="font-size:12px; color:var(--text-medium); margin-bottom:6px;"> Đơn giá: @price.ToString("N0") đ</div>
+                                            <form asp-action="Remove" asp-controller="Cart" method="post" style="display:inline;">
+                                                <input type="hidden" name="id" value="@item.Id" />
+                                                <button type="submit" style="background:none; border:none; color:#ef4444; font-size:12px; cursor:pointer; padding:0; font-weight:600;">
+                                                    <i class="fa fa-trash-can"></i> Gỡ bỏ
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style="padding:16px; text-align:center;">
+                                    <form asp-action="UpdateQuantity" asp-controller="Cart" method="post" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <input type="number" name="quantity" value="@item.Quantity" min="1" 
+                                               max="@(isProduct ? item.Product.StockQuantity : 99)"
+                                               style="width:50px; text-align:center; border:1px solid var(--border); border-radius:4px; padding:4px; font-weight:700;"
+                                               onchange="this.form.submit()" />
+                                    </form>
+                                    @if(isProduct) {
+                                        <div style="font-size: 10px; color: var(--text-medium); margin-top: 4px;">Kho còn: @item.Product.StockQuantity</div>
+                                    }
+                                </td>
+                                <td style="padding:16px; text-align:right; font-weight:800; color:var(--text-dark); font-size:16px;">
+                                    @((price * item.Quantity).ToString("N0")) đ
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card-vn" style="padding:24px; position: sticky; top: 84px;">
+                <h3 style="font-size:18px; font-weight:800; margin-bottom:20px; color:var(--text-dark);">Tóm tắt đơn hàng</h3>
+                <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:15px;">
+                    <span style="color:var(--text-medium);">Tạm tính (@Model.Sum(i=>i.Quantity) sản phẩm)</span>
+                    <span style="font-weight:700;">@total.ToString("N0") đ</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:24px; font-size:15px;">
+                    <span style="color:var(--text-medium);">Phí vận chuyển</span>
+                    <span style="color:#22c55e; font-weight:700;">Miễn phí</span>
+                </div>
+                <hr style="border:none; border-top:1px solid var(--border); margin-bottom:20px;" />
+                <div style="display:flex; justify-content:space-between; margin-bottom:30px; align-items:center;">
+                    <span style="font-weight:700; font-size:16px;">TỔNG CỘNG</span>
+                    <span style="font-weight:900; font-size:24px; color:#ef4444;">@total.ToString("N0") đ</span>
+                </div>
+                <a href="/Order/Checkout" class="btn-primary-vn" style="display:block; text-align:center; background:var(--primary); color:#fff; text-decoration:none; padding:15px; font-weight:800; border-radius:8px; font-size:16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">TIẾN HÀNH THANH TOÁN</a>
+                <p style="text-align:center; font-size:12px; color:var(--text-medium); margin-top:16px;">
+                    <i class="fa fa-shield-halved"></i> Thanh toán an toàn & Bảo mật
+                </p>
+            </div>
+        </div>
+    }
+</div>

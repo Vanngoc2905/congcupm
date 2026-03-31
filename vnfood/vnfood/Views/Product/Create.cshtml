@@ -1,0 +1,130 @@
+@model vnfood.ViewModels.ProductCreateViewModel
+@{
+    ViewData["Title"] = "Đăng bán Sản phẩm - Bếp Việt";
+}
+
+<div style="max-width: 800px; margin: 0 auto; padding-top: 20px;">
+    
+    <div class="card-vn" style="padding: 30px;">
+        <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 24px; color: var(--text-dark); display: flex; align-items: center; gap: 12px;">
+            <i class="fa fa-store" style="color: var(--primary);"></i> Đăng bán Sản phẩm Mới
+        </h2>
+
+        <form asp-controller="Product" asp-action="Create" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+
+            <div class="form-group-vn">
+                <label asp-for="Name">TÊN SẢN PHẨM</label>
+                <input asp-for="Name" class="form-control-vn" placeholder="Vd: Bộ dao làm bếp Professional" required />
+                <span asp-validation-for="Name" style="color: #ef4444; font-size: 12px;"></span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 20px; margin-top: 20px;">
+                <div class="form-group-vn">
+                    <label asp-for="Price">GIÁ BÁN (VNĐ)</label>
+                    <input asp-for="Price" type="number" class="form-control-vn" placeholder="Vd: 500000" required />
+                </div>
+                
+                <div class="form-group-vn">
+                    <label asp-for="StockQuantity">SỐ LƯỢNG KHO</label>
+                    <input asp-for="StockQuantity" type="number" class="form-control-vn" placeholder="Vd: 20" required />
+                </div>
+
+                <div class="form-group-vn">
+                    <label asp-for="CategoryId">DANH MỤC</label>
+                    <select asp-for="CategoryId" class="form-control-vn" required>
+                        <option value="">Chọn danh mục...</option>
+                        @if (Model.Categories != null)
+                        {
+                            foreach (var cat in Model.Categories)
+                            {
+                                <option value="@cat.Id">@cat.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group-vn" style="margin-top: 20px;">
+                <label asp-for="Description">MÔ TẢ SẢN PHẨM</label>
+                <textarea asp-for="Description" class="form-control-vn" rows="5" placeholder="Mô tả chi tiết về sản phẩm, chất liệu, kích thước, công dụng..."></textarea>
+            </div>
+
+            <div class="form-group-vn" style="margin-top: 24px;">
+                <label>HÌNH ẢNH SẢN PHẨM (Tối đa 3 ảnh)</label>
+                <div style="display: flex; gap: 16px; margin-top: 10px;">
+                    <label for="img-1" class="upload-box" id="box-1">
+                        <i class="fa fa-plus"></i> <span style="font-size: 11px;">Ảnh chính</span>
+                        <img src="" class="preview-img d-none" id="prev-1" />
+                    </label>
+                    <input type="file" id="img-1" asp-for="ImageFile" accept="image/*" style="display:none;" onchange="previewImage(this, 'prev-1', 'box-1')" />
+
+                    <label for="img-2" class="upload-box" id="box-2">
+                        <i class="fa fa-plus"></i> <span style="font-size: 11px;">Ảnh 2</span>
+                        <img src="" class="preview-img d-none" id="prev-2" />
+                    </label>
+                    <input type="file" id="img-2" asp-for="ImageFile2" accept="image/*" style="display:none;" onchange="previewImage(this, 'prev-2', 'box-2')" />
+
+                    <label for="img-3" class="upload-box" id="box-3">
+                        <i class="fa fa-plus"></i> <span style="font-size: 11px;">Ảnh 3</span>
+                        <img src="" class="preview-img d-none" id="prev-3" />
+                    </label>
+                    <input type="file" id="img-3" asp-for="ImageFile3" accept="image/*" style="display:none;" onchange="previewImage(this, 'prev-3', 'box-3')" />
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 16px; margin-top: 40px;">
+                <a href="/Shop" class="btn-primary-vn" style="background: #f1f5f9; color: #475569; text-decoration: none;">Hủy</a>
+                <button type="submit" class="btn-primary-vn" style="padding-left: 40px; padding-right: 40px;">Đăng sản phẩm</button>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<style>
+    .upload-box {
+        width: 100px;
+        height: 100px;
+        background: #f8fafc;
+        border: 2px dashed #cbd5e1;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.2s;
+    }
+    .upload-box:hover { border-color: var(--primary); color: var(--primary); background: #fffbef; }
+    .upload-box.has-img i, .upload-box.has-img span { display: none; }
+    
+    .preview-img {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        object-fit: cover;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        function previewImage(input, imgId, boxId) {
+            const file = input.files[0];
+            const imgEl = document.getElementById(imgId);
+            const boxEl = document.getElementById(boxId);
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imgEl.src = e.target.result;
+                    imgEl.classList.remove('d-none');
+                    boxEl.classList.add('has-img');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+    </script>
+}

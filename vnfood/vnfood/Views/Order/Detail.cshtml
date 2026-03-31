@@ -1,0 +1,88 @@
+@model vnfood.Models.Order
+@{
+    ViewData["Title"] = "Chi tiết đơn hàng #" + Model.Id;
+}
+
+<div style="max-width: 1000px; margin: 0 auto; padding-top: 30px;">
+    <h1 style="font-size:24px; font-weight:800; margin-bottom:30px; color:var(--text-dark); display:flex; align-items:center; gap:12px;">
+        <i class="fa fa-receipt" style="color:var(--primary);"></i> Chi tiết đơn hàng #ORD-@Model.Id
+    </h1>
+
+    <div style="display:grid; grid-template-columns: 1fr 380px; gap:24px; align-items: start;">
+        <div class="card-vn" style="padding:32px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; border-bottom:1px solid var(--border); padding-bottom:16px;">
+                <h3 style="font-size:18px; font-weight:700; color:var(--text-dark);">THÔNG TIN GIAO HÀNG</h3>
+                @{
+                    var statusClass = Model.Status switch {
+                        "Chờ xác nhận" => "status-pending",
+                        "Đang chuẩn bị" => "status-preparing",
+                        "Đang giao" => "status-shipping",
+                        "Hoàn thành" => "status-completed",
+                        "Đã hủy" => "status-cancelled",
+                        _ => "status-pending"
+                    };
+                }
+                <span class="status-badge @statusClass">@Model.Status</span>
+            </div>
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px; margin-bottom:40px;">
+                <div>
+                    <div style="font-size:13px; color:var(--text-medium); margin-bottom:8px; font-weight:700;">NGƯỜI NHẬN</div>
+                    <div style="font-size:16px; font-weight:800; color:var(--text-dark); margin-bottom:4px;">@Model.FullName</div>
+                    <div style="font-size:14.5px; color:var(--text-medium);">@Model.PhoneNumber</div>
+                </div>
+                <div>
+                    <div style="font-size:13px; color:var(--text-medium); margin-bottom:8px; font-weight:700;">ĐỊA CHỈ</div>
+                    <div style="font-size:14.5px; color:var(--text-dark); line-height:1.6;">@Model.Address</div>
+                </div>
+                <div>
+                    <div style="font-size:13px; color:var(--text-medium); margin-bottom:8px; font-weight:700;">PHƯƠNG THỨC THANH TOÁN</div>
+                    <div style="font-size:14.5px; color:var(--text-dark);">@Model.PaymentMethod</div>
+                </div>
+                <div>
+                    <div style="font-size:13px; color:var(--text-medium); margin-bottom:8px; font-weight:700;">NGÀY ĐẶT HÀNG</div>
+                    <div style="font-size:14.5px; color:var(--text-dark);">@Model.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                </div>
+            </div>
+
+            <h3 style="font-size:18px; font-weight:700; margin-bottom:24px; color:var(--text-dark); border-bottom:1px solid var(--border); padding-bottom:12px;">SẢN PHẨM ĐÃ ĐẶT</h3>
+            @foreach (var item in Model.OrderItems)
+            {
+                var name = item.Post?.Title ?? item.Product?.Name;
+                var img = item.Post?.ImageUrl ?? item.Product?.ImageUrl;
+                var link = item.Post != null ? $"/Post/Detail/{item.PostId}" : $"/Product/Detail/{item.ProductId}";
+
+                <div style="display:flex; gap:16px; margin-bottom:20px; align-items:center;">
+                    <div style="width:70px; height:70px; border-radius:12px; overflow:hidden; background:#f1f5f9; flex-shrink:0;">
+                        @if (!string.IsNullOrEmpty(img))
+                        { <img src="@img" style="width:100%; height:100%; object-fit:cover;" /> }
+                    </div>
+                    <div style="flex:1;">
+                        <a href="@link" style="font-weight:700; color:var(--text-dark); text-decoration:none; display:block; margin-bottom:4px; font-size:15px;">@name</a>
+                        <div style="font-size:14px; color:var(--text-medium);">@item.UnitPrice.ToString("N0") đ x @item.Quantity</div>
+                    </div>
+                    <div style="font-size:16px; font-weight:800; color:var(--text-dark);">@((item.UnitPrice * item.Quantity).ToString("N0")) đ</div>
+                </div>
+            }
+        </div>
+
+        <div class="card-vn" style="padding:24px; position:sticky; top:30px;">
+            <h3 style="font-size:16px; font-weight:700; margin-bottom:24px; color:var(--text-dark);">TỔNG KẾT</h3>
+            <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:15px;">
+                <span style="color:var(--text-medium);">Tổng tiền hàng</span>
+                <span style="font-weight:600;">@Model.TotalAmount.ToString("N0") đ</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:20px; font-size:15px;">
+                <span style="color:var(--text-medium);">Phí vận chuyển</span>
+                <span style="color:#22c55e; font-weight:600;">Miễn phí</span>
+            </div>
+            <hr style="border:none; border-top:1px solid var(--border); margin-bottom:20px;" />
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:700; font-size:16px;">TỔNG CỘNG</span>
+                <span style="font-weight:800; font-size:24px; color:var(--primary);">@Model.TotalAmount.ToString("N0") đ</span>
+            </div>
+            
+            <a href="/Order" style="display:block; text-align:center; padding:16px; color:var(--primary); font-size:14px; text-decoration:none; font-weight:700; margin-top:20px; border:2px solid var(--primary); border-radius:12px; transition:all 0.2s;" onmouseover="this.style.background='var(--primary)'; this.style.color='white'" onmouseout="this.style.background='white'; this.style.color='var(--primary)'">QUAY LẠI DANH SÁCH</a>
+        </div>
+    </div>
+</div>

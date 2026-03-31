@@ -1,0 +1,107 @@
+@model vnfood.Models.Post
+@{
+    ViewData["Title"] = "Chỉnh sửa Công Thức - " + Model.Title;
+}
+
+<div style="max-width: 860px; margin: 0 auto; padding-top: 20px;">
+    
+    <div class="card-vn" style="padding: 30px;">
+        <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 24px; color: var(--text-dark);">
+            <i class="fa fa-pen-to-square" style="color:var(--primary);"></i> Chỉnh sửa Công Thức
+        </h2>
+
+        <form asp-controller="Post" asp-action="Edit" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+
+            <!-- Title, Time, Servings -->
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div class="form-group-vn" style="flex: 2; min-width: 300px;">
+                    <label>TÊN MÓN ĂN</label>
+                    <input type="text" asp-for="Title" class="form-control-vn" required />
+                </div>
+                
+                <div class="form-group-vn" style="flex: 1; min-width: 140px;">
+                    <label>THỜI GIAN</label>
+                    <input type="text" asp-for="PrepTime" class="form-control-vn" required />
+                </div>
+
+                <div class="form-group-vn" style="flex: 1; min-width: 140px;">
+                    <label>KHẨU PHẦN</label>
+                    <input type="text" asp-for="Servings" class="form-control-vn" required />
+                </div>
+
+                <div class="form-group-vn" style="flex: 1; min-width: 140px;">
+                    <label style="color:var(--primary); font-weight:700;">GIÁ BÁN (VNĐ)</label>
+                    <input type="number" asp-for="Price" class="form-control-vn" />
+                </div>
+            </div>
+
+            <!-- Description & Image -->
+            <div class="form-group-vn" style="margin-top: 20px;">
+                <label>MÔ TẢ NGẮN / LỜI GIỚI THIỆU</label>
+                <div style="display: flex; gap: 20px;">
+                    <textarea asp-for="Content" class="form-control-vn" rows="3" style="flex:1;" required></textarea>
+                    
+                    <div style="width: 140px; flex-shrink: 0; display:flex; flex-direction:column;">
+                        <label for="edit-img" class="upload-box has-img" id="upload-box-edit">
+                            <img src="@(Model.ImageUrl ?? "")" class="preview-img" id="preview-edit" />
+                        </label>
+                        <input type="file" id="edit-img" name="imageFile" accept="image/*" style="display:none;" onchange="previewImageEdit(this)" />
+                        <span style="font-size: 11px; color: var(--text-medium); margin-top: 4px; text-align: center;">Đổi ảnh</span>
+                    </div>
+                </div>
+            </div>
+
+            <hr style="margin: 30px 0; border:none; border-top:1px solid var(--border);" />
+
+            <div class="form-group-vn">
+                <label>NGUYÊN LIỆU</label>
+                <textarea asp-for="Ingredients" class="form-control-vn" rows="5" required></textarea>
+            </div>
+
+            <div class="form-group-vn" style="margin-top: 24px;">
+                <label>CÁCH LÀM</label>
+                <textarea asp-for="Instructions" class="form-control-vn" rows="7" required></textarea>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap: 16px; margin-top: 30px;">
+                <a asp-action="Detail" asp-route-id="@Model.Id" class="btn-primary-vn" style="background:#f1f5f9; color:#475569; text-decoration:none;">Hủy</a>
+                <button type="submit" class="btn-primary-vn" style="padding-left: 30px; padding-right: 30px; background: var(--primary); color: white; border: none; font-weight: 700; border-radius: 8px; cursor: pointer;">Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .upload-box {
+        width: 140px;
+        height: 140px;
+        background: #f8fafc;
+        border: 2px dashed #cbd5e1;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+    }
+    .preview-img { width: 100%; height: 100%; object-fit: cover; }
+</style>
+
+@section Scripts {
+    <script>
+        function previewImageEdit(input) {
+            const file = input.files[0];
+            const imgEl = document.getElementById('preview-edit');
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imgEl.src = e.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+    </script>
+}

@@ -1,0 +1,86 @@
+@model List<vnfood.Models.Order>
+@{
+    ViewData["Title"] = "Đơn hàng của tôi";
+}
+
+<div style="max-width: 1000px; margin: 0 auto; padding-top: 30px;">
+    <h1 style="font-size:24px; font-weight:800; margin-bottom:30px; color:var(--text-dark);">
+        <i class="fa fa-receipt" style="color:var(--primary);"></i> Lịch sử đơn hàng
+    </h1>
+
+    @if (!Model.Any())
+    {
+        <div class="card-vn" style="padding: 60px 20px; text-align:center;">
+            <div style="font-size:64px; color:#e2e8f0; margin-bottom:20px;"><i class="fa fa-box-open"></i></div>
+            <h2 style="font-size:20px; color:var(--text-dark); margin-bottom:12px;">Chưa có đơn hàng nào</h2>
+            <p style="color:var(--text-medium); margin-bottom:24px;">Bạn chưa thực hiện bất kỳ giao dịch nào.</p>
+            <a href="/" class="btn-primary-vn" style="display:inline-block; background:var(--primary); color:#fff; text-decoration:none; padding:10px 24px; border-radius:12px; font-weight:700;">MUA SẮM NGAY</a>
+        </div>
+    }
+    else
+    {
+        <div class="card-vn" style="padding:0; overflow:hidden; border-radius:16px;">
+            <table style="width:100%; border-collapse:collapse;">
+                <thead>
+                    <tr style="border-bottom:1px solid var(--border); background:#f8fafc;">
+                        <th style="padding:20px; text-align:left; font-size:13px; color:var(--text-medium); font-weight:700;">MÃ ĐƠN HÀNG</th>
+                        <th style="padding:20px; text-align:left; font-size:13px; color:var(--text-medium); font-weight:700;">NGÀY ĐẶT</th>
+                        <th style="padding:20px; text-align:left; font-size:13px; color:var(--text-medium); font-weight:700;">TỔNG TIỀN</th>
+                        <th style="padding:20px; text-align:center; font-size:13px; color:var(--text-medium); font-weight:700;">TRẠNG THÁI</th>
+                        <th style="padding:20px; text-align:right; font-size:13px; color:var(--text-medium); font-weight:700;">THAO TÁC</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var order in Model)
+                    {
+                        <tr style="border-bottom:1px solid var(--border); transition: background 0.2s;" onmouseover="this.style.background='#fcfcfd'" onmouseout="this.style.background='white'">
+                            <td style="padding:20px; font-weight:700; color:var(--text-dark);">
+                                #ORD-@order.Id
+                            </td>
+                            <td style="padding:20px; color:var(--text-dark); font-size:14.5px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <i class="fa fa-calendar-alt" style="color:var(--text-light);"></i> @order.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                </div>
+                            </td>
+                            <td style="padding:20px; font-weight:800; color:var(--primary); font-size:16px;">
+                                @order.TotalAmount.ToString("N0") đ
+                            </td>
+                            <td style="padding:20px; text-align:center;">
+                                @{
+                                    var statusClass = order.Status switch {
+                                        "Chờ xác nhận" => "status-pending",
+                                        "Đang chuẩn bị" => "status-preparing",
+                                        "Đang giao" => "status-shipping",
+                                        "Hoàn thành" => "status-completed",
+                                        "Đã hủy" => "status-cancelled",
+                                        _ => "status-pending"
+                                    };
+                                }
+                                <span class="status-badge @statusClass">@order.Status</span>
+                            </td>
+                            <td style="padding:20px; text-align:right;">
+                                <a href="/Order/Detail/@order.Id" style="color:var(--primary); text-decoration:none; font-weight:700; font-size:14px; display:inline-flex; align-items:center; gap:6px;">Chi tiết <i class="fa fa-chevron-right" style="font-size:12px;"></i></a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<style>
+    .status-badge {
+        padding: 6px 14px;
+        border-radius: 30px;
+        font-size: 11px;
+        font-weight: 700;
+        display: inline-block;
+        white-space: nowrap;
+    }
+    .status-pending { background: #fef9c3; color: #854d0e; }
+    .status-preparing { background: #dcfce7; color: #166534; }
+    .status-shipping { background: #dbeafe; color: #1e40af; }
+    .status-completed { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .status-cancelled { background: #fee2e2; color: #991b1b; }
+</style>
